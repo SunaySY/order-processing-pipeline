@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 
 dynamodb: Any = boto3.resource('dynamodb')
 table = dynamodb.Table('Orders')
+sns = boto3.client('sns')
+
+TOPIC_ARN = 'arn:aws:sns:ap-south-1:565881507579:order-events'
 
 def lambda_handler(event, context):
     try:
@@ -30,6 +33,16 @@ def lambda_handler(event, context):
                 'inventory_updated': False,
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
+        )
+
+        sns.publish(
+            TopicArn=TOPIC_ARN,
+            Message=json.dumps({
+                'order_id':order_id,
+                'item_name':item_name,
+                'quantity':quantity
+            }),
+            Subject='NewOrder'
         )
 
         return {
